@@ -753,10 +753,10 @@ namespace Draw_Balloon_net
 
                 foreach (Point3d pt in pts3D)
                 {
-                    ed.WriteMessage("Point number: " + pt.X + " " + pt.Y + " " + pt.Z);                    
+                    ed.WriteMessage("Point number: " + pt.X + " " + pt.Y + " " + pt.Z);
+                    markIntersectionPoint(db, ed, pt);                  
                 }
             }
-
         }
 
         private void implementDoubleXRef(Database db, Editor ed)
@@ -803,7 +803,8 @@ namespace Draw_Balloon_net
 
                     foreach (Point3d pt in pt3DCol)
                     {
-                        ed.WriteMessage("Point number: " + pt.X + " " + pt.Y + " " + pt.Z);                       
+                        ed.WriteMessage("Point number: " + pt.X + " " + pt.Y + " " + pt.Z);
+                        markIntersectionPoint(db, ed, pt);
                     }
                 }
             }            
@@ -865,19 +866,27 @@ namespace Draw_Balloon_net
             BlockReference blkRefer = null;
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                PromptEntityOptions ptEntityOpt = new PromptEntityOptions("Select the Block Reference object that you have just inserted:");
-                PromptEntityResult ptEntityRes = ed.GetEntity(ptEntityOpt);
-                if (ptEntityRes.Status != PromptStatus.OK)
+                try
                 {
-                    return null;
-                }
+                    PromptEntityOptions ptEntityOpt = new PromptEntityOptions("Select the Block Reference object that you have just inserted:");
+                    PromptEntityResult ptEntityRes = ed.GetEntity(ptEntityOpt);
+                    if (ptEntityRes.Status != PromptStatus.OK)
+                    {
+                        return null;
+                    }
 
-                //Get this entity
-                blkRefer = trans.GetObject(ptEntityRes.ObjectId, OpenMode.ForRead) as BlockReference;
-                if (blkRefer != null)
-                {
-                    return blkRefer;
+                    //Get this entity
+                    blkRefer = trans.GetObject(ptEntityRes.ObjectId, OpenMode.ForRead) as BlockReference;
+                    if (blkRefer != null)
+                    {
+                        return blkRefer;
+                    }
                 }
+                catch (System.Exception)
+                {
+                    trans.Abort();
+                    throw;
+                }                
             }
 
             return null;
@@ -909,6 +918,48 @@ namespace Draw_Balloon_net
 
             return null;
         }
+
+
+        private void markIntersectionPoint(Database db, Editor ed, Point3d pt3D)
+        {
+            if (db == null || ed == null)
+            {
+                return;
+            }
+
+
+            const int radius = 1;
+            using (Transaction trans = db.TransactionManager.StartTransaction())
+            {
+                try
+                {
+                    BlockTable blk = trans.GetObject(db.BlockTableId, OpenMode.ForWrite) as BlockTable;
+                    if (blk == null)
+                    {
+                        trans.Abort();
+                        return;
+                    }
+
+                    // make the circle. 
+                    Circle cir = new Circle();
+                    cir.Center = pt3D;
+                    cir.Radius = radius;
+
+                    // save this circle to database. 
+                    BlockTableRecord blkRecord = trans.GetObject(blk[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+                    blkRecord.AppendEntity(cir);
+
+                    trans.AddNewlyCreatedDBObject(cir, true);
+
+                    trans.Commit();
+                }
+                catch (System.Exception)
+                {
+                    trans.Abort();
+                    throw;
+                }                              
+            }
+        }
         #endregion
     }
     #endregion
@@ -928,22 +979,30 @@ namespace Draw_Balloon_net
 
             using (Transaction trans = currentDB.TransactionManager.StartTransaction())
             {
-                // get object DBDictionary and make the Group object.
-                DBDictionary dbDict = trans.GetObject(currentDB.GroupDictionaryId, OpenMode.ForWrite) as DBDictionary;
-                Group dbGroup = new Group(NameGroup, true);
-                dbGroup.Description = IdentifyBalloon;        // it is identification of balloon's type.
-
-                // add group to Group Dictionary. 
-                dbDict.UpgradeOpen();
-                dbDict.SetAt(NameGroup, dbGroup);
-
-                foreach (ObjectId id in LstObjectId)
+                try
                 {
-                    dbGroup.Append(id);
-                }
+                    // get object DBDictionary and make the Group object.
+                    DBDictionary dbDict = trans.GetObject(currentDB.GroupDictionaryId, OpenMode.ForWrite) as DBDictionary;
+                    Group dbGroup = new Group(NameGroup, true);
+                    dbGroup.Description = IdentifyBalloon;        // it is identification of balloon's type.
 
-                trans.AddNewlyCreatedDBObject(dbGroup, true);
-                trans.Commit();
+                    // add group to Group Dictionary. 
+                    dbDict.UpgradeOpen();
+                    dbDict.SetAt(NameGroup, dbGroup);
+
+                    foreach (ObjectId id in LstObjectId)
+                    {
+                        dbGroup.Append(id);
+                    }
+
+                    trans.AddNewlyCreatedDBObject(dbGroup, true);
+                    trans.Commit();
+                }
+                catch (System.Exception)
+                {
+                    trans.Abort();
+                    throw;
+                }                
             }
         }
 
@@ -994,7 +1053,8 @@ namespace Draw_Balloon_net
                 LayerTable layTable = trans.GetObject(db.LayerTableId, OpenMode.ForRead) as LayerTable;
                 if (layTable == null)
                 {
-                    return null;
+                    trans.Abort();
+                    //return null;
                 }
 
                 // get the name of all layer tables. 
@@ -1026,26 +1086,35 @@ namespace Draw_Balloon_net
 
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                DBDictionary dbDict = trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite) as DBDictionary;
-                if (dbDict == null)
+                try
                 {
-                    return;
-                }
-
-                // get the name of all layer tables. 
-                ObservableCollection<string> obsCollect = new ObservableCollection<string>();
-                foreach (DBDictionaryEntry entry in dbDict)
-                {
-                    Group gp = trans.GetObject(entry.Value, OpenMode.ForWrite) as Group;
-                    if (gp == null || gp.Description != IdentifyBalloon)
+                    DBDictionary dbDict = trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite) as DBDictionary;
+                    if (dbDict == null)
                     {
-                        continue;
+                        trans.Abort();
+                        // return;
                     }
 
-                    updateElements(gp);
-                }
+                    // get the name of all layer tables. 
+                    ObservableCollection<string> obsCollect = new ObservableCollection<string>();
+                    foreach (DBDictionaryEntry entry in dbDict)
+                    {
+                        Group gp = trans.GetObject(entry.Value, OpenMode.ForWrite) as Group;
+                        if (gp == null || gp.Description != IdentifyBalloon)
+                        {
+                            continue;
+                        }
 
-                trans.Commit();
+                        updateElements(gp);
+                    }
+
+                    trans.Commit();
+                }
+                catch (System.Exception)
+                {
+                    trans.Abort();
+                    throw;
+                }                                
             }
         }
 
@@ -1071,18 +1140,18 @@ namespace Draw_Balloon_net
                 {
                     dbObj = trans.GetObject(id, OpenMode.ForWrite);
 
-                    if (id.ObjectClass.DxfName == "LINE")
+                    if (dbObj is Line) //id.ObjectClass.DxfName == "LINE")
                     {
                         line = dbObj as Line;
                         line.ColorIndex = setting.IndexColorLine;
                     }
-                    else if (id.ObjectClass.DxfName == "CIRCLE")
+                    else if (dbObj is Circle)//id.ObjectClass.DxfName == "CIRCLE")
                     {
                         circle = dbObj as Circle;
                         circle.Diameter = setting.Diameter;
                         circle.ColorIndex = setting.IndexColorCircle;
                     }
-                    else if (id.ObjectClass.DxfName == "TEXT")
+                    else if (dbObj is DBText)//id.ObjectClass.DxfName == "TEXT")
                     {
                         text = dbObj as DBText;
                         text.TextString = setting.Text;
@@ -1141,31 +1210,39 @@ namespace Draw_Balloon_net
             {
                 using (Transaction trans = db.TransactionManager.StartTransaction())
                 {
-                    SelectionSet selectedEntities = selectionResult.Value;
-                    lstGroup = new List<Group>();
-
-                    foreach (ObjectId id in selectedEntities.GetObjectIds())
+                    try
                     {
-                        Entity ent = trans.GetObject(id, OpenMode.ForWrite) as Entity;
+                        SelectionSet selectedEntities = selectionResult.Value;
+                        lstGroup = new List<Group>();
 
-                        // get group that correspond to this "ent".
-                        ObjectIdCollection ids = ent.GetPersistentReactorIds();
-
-                        foreach (ObjectId objId in ids)
+                        foreach (ObjectId id in selectedEntities.GetObjectIds())
                         {
-                            DBObject objDB = trans.GetObject(objId, OpenMode.ForWrite);
-                            if (objDB is Group)
-                            {
-                                Group grp = objDB as Group;
-                                if (lstGroup.Contains(grp))
-                                {
-                                    continue;
-                                }
+                            Entity ent = trans.GetObject(id, OpenMode.ForWrite) as Entity;
 
-                                lstGroup.Add(grp);
+                            // get group that correspond to this "ent".
+                            ObjectIdCollection ids = ent.GetPersistentReactorIds();
+
+                            foreach (ObjectId objId in ids)
+                            {
+                                DBObject objDB = trans.GetObject(objId, OpenMode.ForWrite);
+                                if (objDB is Group)
+                                {
+                                    Group grp = objDB as Group;
+                                    if (lstGroup.Contains(grp))
+                                    {
+                                        continue;
+                                    }
+
+                                    lstGroup.Add(grp);
+                                }
                             }
                         }
                     }
+                    catch (System.Exception)
+                    {
+                        trans.Abort();
+                        throw;
+                    }                    
                 }
             }
             return lstGroup;
@@ -1181,23 +1258,31 @@ namespace Draw_Balloon_net
 
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                //List<Group> lstGroup = getSelectedGroups();                
-                if (LstGroup == null)
+                try
                 {
-                    return;
-                }
-
-                foreach (Group grp in LstGroup)
-                {
-                    if (grp.Description != IdentifyBalloon)
+                    //List<Group> lstGroup = getSelectedGroups();                
+                    if (LstGroup == null)
                     {
-                        continue;
+                        return;
                     }
 
-                    updateElements(grp);
-                }
+                    foreach (Group grp in LstGroup)
+                    {
+                        if (grp.Description != IdentifyBalloon)
+                        {
+                            continue;
+                        }
 
-                trans.Commit();
+                        updateElements(grp);
+                    }
+
+                    trans.Commit();
+                }
+                catch (System.Exception)
+                {
+                    trans.Abort();
+                    throw;
+                }                
             }
         }
 

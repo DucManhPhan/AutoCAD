@@ -1,0 +1,98 @@
+﻿<Window x:Class="Draw_Balloon_net.BalloonSettingDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Draw_Balloon_net"
+             mc:Ignorable="d" Height="340" Width="295"
+             ResizeMode="NoResize">
+    <Grid Margin="0,0,0,-36">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--Text and diameter of the circle-->
+        <Label Content="Text" Grid.Row="0" Grid.Column="0" />
+        <TextBox Grid.Row="0" Grid.Column="1"
+                 Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10,2,108,2" Height="20" />
+
+        <Label Content="CircleDiameter" Grid.Row="1" Grid.Column="0" />
+        <TextBox Grid.Row="1" Grid.Column="1"
+                 Text="{Binding CircleDiameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20" Margin="10,2,108,2" />
+
+        <!--The color of the text-->
+        <Label Content="Text Color" Grid.Row="2" Grid.Column="0" />
+        <ComboBox Grid.Row="2" Grid.Column="1"
+                  ItemsSource="{Binding Color, Mode=OneWay}"
+                  SelectedItem="{Binding SelectedTextColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20" Margin="10,2,108,2" />
+
+        <!--The color of the circle-->
+        <Label Content="Circle Color" Grid.Row="3" Grid.Column="0" />
+        <ComboBox Grid.Row="3" Grid.Column="1"
+                  ItemsSource="{Binding Color, Mode=OneWay}"
+                  SelectedItem="{Binding SelectedCircleColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20" Margin="10,2,108,2" />
+
+        <!--The color of the line-->
+        <Label Content="Line Color" Grid.Row="4" Grid.Column="0" />
+        <ComboBox Grid.Row="4" Grid.Column="1"
+                  ItemsSource="{Binding Color, Mode=OneWay}"
+                  SelectedItem="{Binding SelectedLineColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20" Margin="10,2,108,2" />
+
+        <!--The layer of the Text-->
+        <Label Content="Text Layer" Grid.Row="5" Grid.Column="0" />
+        <ComboBox Grid.Row="5" Grid.Column="1"
+                  ItemsSource="{Binding TextLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  SelectedItem="{Binding SelectedTextLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  Height="20" Margin="10,3,16,4" />
+
+        <!--The layer of the Line-->
+        <Label Content="Line Layer" Grid.Row="6" Grid.Column="0" />
+        <ComboBox Grid.Row="6" Grid.Column="1"
+                  ItemsSource="{Binding LineLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                  SelectedItem="{Binding SelectedLineLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  Height="20" Margin="10,3,16,4" />
+
+        <!--The layer of the Circle-->
+        <Label Content="Circle Layer" Grid.Row="7" Grid.Column="0" />
+        <ComboBox Grid.Row="7" Grid.Column="1"
+                  ItemsSource="{Binding CircleLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                  SelectedItem="{Binding SelectedCircleLayer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  Height="20" Margin="10,3,16,4" />
+
+        <!--The checkbox for applying the above values with the selected entities or all of entites-->
+        <StackPanel Orientation="Vertical" Grid.Row="8" Grid.Column="1">
+            <RadioButton GroupName="rdIsSelectedState" Content="Apply with selected entities." 
+                         IsChecked="{Binding IsSelectedAny, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"                         
+                         Margin="10, 2, 5, 2"/>
+            <RadioButton GroupName="rdIsSelectedState" Content="Apply all of entities." 
+                         IsChecked="{Binding IsSelectedAll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"    
+                         Margin="10, 2, 5, 2"/>
+        </StackPanel>
+
+
+        <!--The button OK and Cancel-->
+        <Button Grid.Row="9" Grid.Column="1"
+                Content="OK" Height="20" 
+                Margin="48,10,100,3"
+                Command="{Binding OkCommand}" />
+
+        <Button Grid.Row="9" Grid.Column="1"
+                Content="Cancel" Height="20" 
+                Margin="132,10,16,4"
+                Command="{Binding CancelCommand}" />
+    </Grid>
+</Window>
